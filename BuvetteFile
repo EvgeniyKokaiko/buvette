@@ -1,0 +1,2 @@
+@RUN: [ npm run dev ]
+@DEBUG: [node .\server.js]
