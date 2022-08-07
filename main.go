@@ -12,14 +12,14 @@ var app = Application{
 	Name:    "Buvette",
 	Usage:   "MakeFile analog",
 	Author:  "re1nhart",
-	Version: "0.0.9",
+	Version: "0.1.0",
 	HelpInfo: ` 
 				Help    = "--help"
 				Version = "--version"
 				Author  = "--author"
 				Full    = "--full"
 				Current = "--current"
-				To reload, write r several times and wait.`,
+				To reload, write r and press enter. To exit you can write exit and press enter`,
 }
 
 func main() {

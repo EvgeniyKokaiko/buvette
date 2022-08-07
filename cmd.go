@@ -10,6 +10,7 @@ import (
 	"regexp"
 	"runtime"
 	"strings"
+	"sync"
 	"syscall"
 )
 
@@ -103,8 +104,8 @@ func RunContext(command []string) {
 	stdin, _ := cmd.StdinPipe()
 	inWriter := io.MultiWriter(stdin)
 	go func() {
-		io.Copy(inWriter, os.Stdin)
-		stdin.Close()
+		io.Copy(inWriter, cmd.Stdin)
+		defer stdin.Close()
 	}()
 	err := cmd.Start()
 	if err != nil || errPipe != nil || errStdErr != nil {
@@ -116,11 +117,16 @@ func RunContext(command []string) {
 	scanner := bufio.NewScanner(stdout)
 	errorScanner := bufio.NewScanner(stderr)
 	stdinScanner := bufio.NewScanner(os.Stdin)
+	//empty := " "
 	go func(ch chan int) {
 		for stdinScanner.Scan() {
 			if standardizeSpaces(stdinScanner.Text()) == "r" {
 				fmt.Println("[BUVETTE]: Reloading Process", strings.Join(command, ""))
 				ch <- 54
+			}
+			if standardizeSpaces(stdinScanner.Text()) == "exit" {
+				fmt.Println("[BUVETTE]: Exit Process", strings.Join(command, ""))
+				ch <- 55
 			}
 		}
 	}(in)
@@ -142,8 +148,12 @@ func RunContext(command []string) {
 		case errorMsg := <-er:
 			fmt.Println(errorMsg)
 			break
-		case <-in:
-			RestartSelf("3000")
+		case code := <-in:
+			if code == 54 {
+				RestartSelf("3000")
+			} else if code == 55 {
+				Exit("3000")
+			}
 			break
 		}
 
@@ -194,4 +204,14 @@ func KillStdPort(PORT string) {
 			fmt.Println("[BUVETTE]: ERROR!3", err123)
 		}
 	}
+}
+
+func Exit(PORT string) {
+	wg := sync.WaitGroup{}
+	wg.Add(1)
+	go func() {
+		KillStdPort(PORT)
+		wg.Done()
+	}()
+	os.Exit(0)
 }
