@@ -10,7 +10,6 @@ import (
 	"regexp"
 	"runtime"
 	"strings"
-	"sync"
 	"syscall"
 )
 
@@ -204,14 +203,17 @@ func KillStdPort(PORT string) {
 			fmt.Println("[BUVETTE]: ERROR!3", err123)
 		}
 	}
+	fmt.Println(fmt.Sprintf("[BUVETTE]: PORT %s is erased!", PORT))
 }
 
 func Exit(PORT string) {
-	wg := sync.WaitGroup{}
-	wg.Add(1)
-	go func() {
+	isExit := make(chan bool)
+	go func(exit chan bool) {
 		KillStdPort(PORT)
-		wg.Done()
-	}()
-	os.Exit(0)
+		isExit <- true
+	}(isExit)
+	data := <-isExit
+	if data {
+		os.Exit(0)
+	}
 }
