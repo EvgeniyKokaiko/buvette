@@ -1,2 +1,8 @@
-@RUN: [ npm run dev ]
-@DEBUG: [node .\server.js]
+@RUN:
+    [ npm run dev ]:
+        {
+            PORT=3000,
+        }
+@DEBUG: [
+    node .\server.js
+        ]: {PORT=3000}

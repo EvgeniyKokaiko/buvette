@@ -1,4 +1,4 @@
-package main
+package utils
 
 import (
 	"fmt"
@@ -22,11 +22,11 @@ func TrimSlice(s []string) []string {
 	return items
 }
 
-func standardizeSpaces(s string) string {
+func StandardizeSpaces(s string) string {
 	return strings.Join(strings.Fields(s), " ")
 }
 
-func isUpperCased(value string) bool {
+func IsUpperCased(value string) bool {
 	if value == strings.ToUpper(value) {
 		return true
 	}
