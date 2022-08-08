@@ -15,4 +15,5 @@ type Command struct {
 
 type Config struct {
 	PORT string
+	PATH string
 }

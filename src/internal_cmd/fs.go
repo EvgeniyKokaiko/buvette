@@ -7,10 +7,7 @@ import (
 )
 
 func ReadFile() string {
-	path, err := os.Getwd()
-	if err != nil {
-		panic("Error! on ReadFile ex")
-	}
+	path := GetWd()
 	fullFileName := fmt.Sprintf("%s/%s", path, FILENAME)
 	fmt.Println(fmt.Sprintf("[BUVETTE]: BuvetteFile PATH: %s", fullFileName))
 	file, err := ioutil.ReadFile(fullFileName)
@@ -19,4 +16,12 @@ func ReadFile() string {
 		return ""
 	}
 	return string(file)
+}
+
+func GetWd() string {
+	path, err := os.Getwd()
+	if err != nil {
+		fmt.Println("[BUVETTE]: ERROR:", err)
+	}
+	return path
 }

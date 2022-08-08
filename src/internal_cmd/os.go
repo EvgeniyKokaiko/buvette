@@ -20,3 +20,17 @@ func ExecCommandForPort(PORT string) *exec.Cmd {
 		return exec.Command("powershell", "-ExecutionPolicy", "Bypass", "-Command", checkPIDS)
 	}
 }
+
+func RunCallbacksByPlatform(winCallback func(), macosCallback func()) {
+	switch runtime.GOOS {
+	case "windows":
+		winCallback()
+		break
+	case "darwin":
+		macosCallback()
+		break
+	default:
+		winCallback()
+		break
+	}
+}

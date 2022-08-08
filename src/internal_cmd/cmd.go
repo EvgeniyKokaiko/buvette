@@ -18,7 +18,7 @@ import (
 const FILENAME = "BuvetteFile"
 const REGEXP = `(?m:(@[a-zA-Z0-9 ]*: (\[(.*?)\])*))(?:(: (\{(.*?)\}))*)`
 
-var reservedFlags = []string{Help, Version, Author, Full, Current}
+var reservedFlags = []string{Help, Version, Author, Full, Current, Example}
 
 const (
 	Help    = "--help"
@@ -26,6 +26,7 @@ const (
 	Author  = "--author"
 	Full    = "--full"
 	Current = "--current"
+	Example = "--example"
 )
 
 type AppType struct {
@@ -61,7 +62,6 @@ func RunApplication(fileData string) {
 	}
 	normalizeAddon := strings.TrimSpace(cmdAddon.Args[2 : len(cmdAddon.Args)-1])
 	currentCommand := strings.Split(normalizeAddon, " ")
-
 	fmt.Println("[BUVETTE]: CurrentCommand =", currentCommand)
 	App.ManageStd(currentCommand, cmdAddon.Config)
 }
@@ -85,10 +85,24 @@ func (app *AppType) RenderServiceInfo(value string) {
 			fmt.Println(fmt.Sprintf("Buvette Commands: %s", key), value)
 		}
 		break
+	case Example:
+		fmt.Println(doc.Example())
+		break
+	default:
+		fmt.Println("[BUVETTE]: Sorry, no such reserved flag!")
+		break
 	}
 }
 
 func (app *AppType) ManageStd(command []string, config map[string]string) {
+	cdPath := config["PATH"]
+	if cdPath != "" {
+		err := os.Chdir(fmt.Sprintf("%s%s", GetWd(), cdPath[1:len(cdPath)-1]))
+		if err != nil {
+			fmt.Println("[BUVETTE]: ERROR!", err)
+		}
+
+	}
 	cmd := exec.Command(strings.TrimSpace(command[0]), command[1:]...)
 	stdout, errPipe := cmd.StdoutPipe()
 	stderr, errStdErr := cmd.StderrPipe()
