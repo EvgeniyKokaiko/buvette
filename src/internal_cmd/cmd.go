@@ -165,6 +165,7 @@ func (app *AppType) ManageStd(command []string, config map[string]string) {
 				ExitApplication(config, channels)
 			}
 			break
+		default:
 		}
 
 	}
@@ -176,6 +177,14 @@ func RestartSelf(config map[string]string) error {
 	env := os.Environ()
 	if err != nil {
 		fmt.Println("[BUVETTE]: ERROR!4", err)
+	}
+	cdPath := config["__OriginalPath"]
+	if cdPath != "" {
+		err := os.Chdir(cdPath)
+		if err != nil {
+			fmt.Println("[BUVETTE]: ERROR!", err)
+		}
+
 	}
 	KillStdPort(config)
 	go func() {

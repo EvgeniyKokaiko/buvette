@@ -6,6 +6,7 @@ import (
 )
 
 func (commands *AppCommands) ParseCommand(data []string) {
+	path := GetWd()
 	for _, node := range data {
 		data := strings.Split(node, ":")
 		entry := types.Command{}
@@ -19,6 +20,7 @@ func (commands *AppCommands) ParseCommand(data []string) {
 				}
 			}
 		}
+		config["__OriginalPath"] = path
 		entry.Args = data[1]
 		entry.Config = config
 		COMMANDS[data[0]] = entry
