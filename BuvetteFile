@@ -1,7 +1,9 @@
+# Comment
 @RUN:
-    [ npm run dev ]:
+    [ node .\server.js ]:
         {
             PORT=3000,
+            PATH="\tester\"
         }
 @DEBUG: [
     node .\server.js

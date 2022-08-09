@@ -6,13 +6,12 @@ import (
 	"buvette/src/types"
 	"buvette/src/utils"
 	"fmt"
-	"io"
 	"os"
 	"os/exec"
 	"reflect"
 	"regexp"
+	"runtime"
 	"strings"
-	"syscall"
 )
 
 const FILENAME = "BuvetteFile"
@@ -28,6 +27,10 @@ const (
 	Current = "--current"
 	Example = "--example"
 )
+
+//Система такова!
+//при старті аппки, ми зразу виконуємо os.StartProcess
+// коли нажали r, тоді убиваємо його нахуй і по новій
 
 type AppType struct {
 	types.Application
@@ -101,104 +104,31 @@ func (app *AppType) ManageStd(command []string, config map[string]string) {
 		if err != nil {
 			fmt.Println("[BUVETTE]: ERROR!", err)
 		}
-
 	}
-	cmd := exec.Command(strings.TrimSpace(command[0]), command[1:]...)
-	stdout, errPipe := cmd.StdoutPipe()
-	stderr, errStdErr := cmd.StderrPipe()
-	stdin, _ := cmd.StdinPipe()
-	inWriter := io.MultiWriter(stdin)
-	go func() {
-		io.Copy(inWriter, cmd.Stdin)
-		defer stdin.Close()
-	}()
-	err := cmd.Start()
-	if err != nil || errPipe != nil || errStdErr != nil {
-		fmt.Println("[BUVETTE]: ERROR!", err)
-	}
-	in := make(chan any)
-	out := make(chan any)
-	er := make(chan any)
-	channels := map[string]any{
-		"in":  in,
-		"out": out,
-		"er":  er,
-	}
-	scanner := bufio.NewScanner(stdout)
-	errorScanner := bufio.NewScanner(stderr)
-	stdinScanner := bufio.NewScanner(os.Stdin)
-	//empty := " "
-	go func(ch chan any) {
-		for stdinScanner.Scan() {
-			if utils.StandardizeSpaces(stdinScanner.Text()) == "r" {
-				fmt.Println("[BUVETTE]: Reloading Process", fmt.Sprintf("`%s`", strings.Join(command, " ")))
-				ch <- 54
-			}
-			if utils.StandardizeSpaces(stdinScanner.Text()) == "exit" {
-				fmt.Println("[BUVETTE]: ExitApplication Process", fmt.Sprintf("`%s`", strings.Join(command, " ")))
-				ch <- 55
-			}
-		}
-	}(in)
-	go func(ch chan any) {
-		for scanner.Scan() {
-			ch <- scanner.Text()
-		}
-	}(out)
-	go func(ch chan any) {
-		for errorScanner.Scan() {
-			ch <- errorScanner.Text()
-		}
-	}(er)
-	for {
-		select {
-		case text := <-out:
-			fmt.Println(text)
-			break
-		case errorMsg := <-er:
-			fmt.Println(errorMsg)
-			break
-		case code := <-in:
-			if code == 54 {
-				RestartSelf(config)
-			} else if code == 55 {
-				ExitApplication(config, channels)
-			}
-			break
-		default:
-		}
-
-	}
+	StartDaemon(command, config)
 }
 
-func RestartSelf(config map[string]string) error {
-	self, err := os.Executable()
-	args := os.Args
-	env := os.Environ()
-	if err != nil {
-		fmt.Println("[BUVETTE]: ERROR!4", err)
-	}
-	cdPath := config["__OriginalPath"]
-	if cdPath != "" {
-		err := os.Chdir(cdPath)
-		if err != nil {
-			fmt.Println("[BUVETTE]: ERROR!", err)
-		}
-
-	}
+func StartDaemon(command []string, config map[string]string) {
 	KillStdPort(config)
-	go func() {
-		cmd := exec.Command(self, args[1:]...)
-		cmd.Stdout = os.Stdout
-		cmd.Stderr = os.Stderr
-		cmd.Stdin = os.Stdin
+	if runtime.GOOS == "windows" {
+		env := os.Environ()
+		cmd := exec.Command(strings.TrimSpace(command[0]), command[1:]...)
+		stdout, errPipe := cmd.StdoutPipe()
+		stderr, errStdErr := cmd.StderrPipe()
+		stdin, _ := cmd.StdinPipe()
+		if errPipe != nil || errStdErr != nil {
+			fmt.Println("[BUVETTE]: ERROR!", errPipe)
+		}
 		cmd.Env = env
-		err2 := cmd.Run()
-		if err2 == nil {
+		//KillProcessByHandles()
+		err := cmd.Start()
+		ListenProcesses(command, config, cmd.Stdin, cmd.Stdout, cmd.Stderr, stdin, stdout, stderr)
+		if err == nil {
 			os.Exit(0)
 		}
-	}()
-	return syscall.Exec(self, args, env)
+	}
+	//doesn't work on Windows!
+	//return syscall.Exec(self, args, env)
 }
 
 func KillStdPort(config map[string]string) {
